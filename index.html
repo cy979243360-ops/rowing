@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0f1417">
+<title>划船课表</title>
+<style>
+:root{
+  --bg:#0f1417; --card:#182026; --card2:#1f2a31; --line:#2a3740;
+  --text:#e8eef1; --muted:#8a9aa4; --accent:#2fd3b5; --accent2:#ffb547; --danger:#ff6b6b;
+  --l1:#2b6f8f; --l2:#2fa38a; --l3:#e0a43b; --l4:#e8673e;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font:16px/1.45 -apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif}
+body{padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 16px)}
+.wrap{max-width:640px;margin:0 auto;padding:0 16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 0 10px}
+h1{font-size:20px;margin:0;letter-spacing:.5px}
+.pill{font-size:13px;padding:4px 10px;border-radius:99px;background:var(--card2);color:var(--muted);white-space:nowrap}
+.pill.on{background:rgba(47,211,181,.15);color:var(--accent)}
+.warn{background:rgba(255,181,71,.12);color:var(--accent2);border-radius:12px;padding:10px 12px;font-size:14px;margin:6px 0 10px}
+.tabs{display:flex;gap:6px;background:var(--card);padding:4px;border-radius:12px;margin-bottom:12px}
+.tabs button{flex:1;border:0;background:transparent;color:var(--muted);padding:9px;border-radius:9px;font-size:15px}
+.tabs button.act{background:var(--card2);color:var(--text);font-weight:600}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px}
+.row{display:flex;gap:8px;align-items:center}
+.row.wrap2{flex-wrap:wrap}
+.btn{border:0;border-radius:12px;padding:12px 14px;font-size:16px;font-weight:600;background:var(--card2);color:var(--text)}
+.btn.pri{background:var(--accent);color:#06221c}
+.btn.warnb{background:var(--accent2);color:#2b1a00}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.btn.sm{padding:8px 11px;font-size:14px;border-radius:10px}
+.btn.danger{color:var(--danger)}
+.btn:disabled{opacity:.4}
+.grow{flex:1}
+select,input{font:inherit;color:var(--text);background:var(--card2);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+select{appearance:none;-webkit-appearance:none}
+label{font-size:13px;color:var(--muted)}
+.muted{color:var(--muted);font-size:14px}
+.hidden{display:none!important}
+
+/* 训练主面板 */
+.now{text-align:center;padding:18px 14px 16px;transition:background .3s}
+.now .name{font-size:18px;color:var(--muted)}
+.now .timer{font-size:76px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.05;margin:4px 0 8px;letter-spacing:1px}
+.now .stats{display:flex;justify-content:center;gap:12px}
+.stat{background:var(--card2);border-radius:14px;padding:8px 14px;min-width:120px}
+.stat b{display:block;font-size:30px;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+.stat.lv b{color:var(--accent)}
+.next{margin-top:12px;font-size:15px;color:var(--muted)}
+.next b{color:var(--text)}
+.flash{background:#22403a}
+.soon .timer{color:var(--accent2)}
+.chart{position:relative;display:flex;align-items:flex-end;gap:2px;height:84px;margin-top:6px}
+.chart div.bar{border-radius:3px 3px 0 0;min-width:2px;opacity:.55}
+.chart div.bar.cur{opacity:1;outline:2px solid #fff3}
+.chart div.bar.done{opacity:.25}
+.playhead{position:absolute;top:-4px;bottom:0;width:2px;background:#fff;border-radius:2px;pointer-events:none}
+.chartmeta{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-top:6px;font-variant-numeric:tabular-nums}
+.ctrl{display:grid;grid-template-columns:1fr 2fr 1fr;gap:8px;margin-top:12px}
+.ctrl .btn{padding:16px 8px;font-size:17px}
+.offset{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.offset .val{font-size:22px;font-weight:700;min-width:48px;text-align:center;font-variant-numeric:tabular-nums}
+.live{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.live div{background:var(--card2);border-radius:12px;padding:8px 10px}
+.live b{display:block;font-size:20px;font-variant-numeric:tabular-nums}
+.live span{font-size:12px;color:var(--muted)}
+
+/* 编辑器 */
+.seg{background:var(--card2);border-radius:12px;padding:10px;margin-bottom:8px}
+.seg .top{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.seg .idx{width:22px;color:var(--muted);font-size:13px;text-align:center}
+.seg .fields{display:grid;grid-template-columns:1fr 1fr 1fr 1.3fr;gap:6px}
+.seg .fields label{display:block;margin-bottom:2px}
+.seg .fields input,.seg .fields select{width:100%}
+.seg .ops{display:flex;gap:6px;justify-content:flex-end;margin-top:8px}
+pre.log{background:#0a0e10;border-radius:10px;padding:10px;font-size:12px;max-height:260px;overflow:auto;white-space:pre-wrap;word-break:break-all;margin:8px 0 0}
+.done-card{text-align:center;padding:26px 14px}
+.done-card .big{font-size:40px;font-weight:700;margin:6px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>划船课表</h1>
+    <div class="row">
+      <span id="status" class="pill">未连接</span>
+    </div>
+  </header>
+
+  <div id="noBt" class="warn hidden">当前浏览器不支持网页蓝牙。iPhone 请在 App Store 安装 <b>Bluefy</b> 浏览器后用它打开本页；安卓或电脑请用 Chrome。</div>
+
+  <div class="card" id="connectCard">
+    <div class="row">
+      <button class="btn pri grow" id="btnConnect">连接划船机</button>
+      <button class="btn ghost sm" id="btnConnectAll">搜不到？</button>
+      <button class="btn ghost sm hidden" id="btnDisconnect">断开</button>
+    </div>
+    <div class="muted" id="devInfo" style="margin-top:8px">连接前请先在划船机上划两下把屏幕唤醒，并关掉官方 App。</div>
+  </div>
+
+  <div class="tabs">
+    <button data-tab="train" class="act">训练</button>
+    <button data-tab="edit">课程</button>
+    <button data-tab="set">设置</button>
+  </div>
+
+  <!-- 训练 -->
+  <section id="tab-train">
+    <div class="card" id="pickCard">
+      <div class="row">
+        <select id="courseSel" class="grow"></select>
+      </div>
+      <div class="muted" id="courseNote" style="margin-top:8px"></div>
+    </div>
+
+    <div class="card now" id="nowCard">
+      <div class="name" id="segName">准备开始</div>
+      <div class="timer" id="segTimer">00:00</div>
+      <div class="stats">
+        <div class="stat lv"><b id="segLevel">-</b><span>阻力档位</span></div>
+        <div class="stat"><b id="segSpm">-</b><span>目标桨频</span></div>
+      </div>
+      <div class="next" id="nextInfo"></div>
+    </div>
+
+    <div class="card done-card hidden" id="doneCard">
+      <div class="muted">训练完成</div>
+      <div class="big" id="doneTime">00:00</div>
+      <div class="muted" id="doneStats"></div>
+    </div>
+
+    <div class="card">
+      <div class="chart" id="chart"><div class="playhead" id="playhead"></div></div>
+      <div class="chartmeta"><span id="elapsedTxt">00:00</span><span id="segCountTxt"></span><span id="totalTxt">00:00</span></div>
+      <div class="ctrl">
+        <button class="btn" id="btnPrev">上一段</button>
+        <button class="btn pri" id="btnMain">开始</button>
+        <button class="btn" id="btnNext">下一段</button>
+      </div>
+      <div class="row" style="margin-top:8px">
+        <button class="btn ghost sm grow danger hidden" id="btnStop">结束训练</button>
+      </div>
+    </div>
+
+    <div class="card offset">
+      <div>
+        <div>整体强度微调</div>
+        <div class="muted">今天状态差就调低，所有段同时生效</div>
+      </div>
+      <div class="row">
+        <button class="btn sm" id="offMinus">－</button>
+        <div class="val" id="offVal">0</div>
+        <button class="btn sm" id="offPlus">＋</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="muted" style="margin-bottom:8px">实时数据</div>
+      <div class="live">
+        <div><b id="lvSpm">--</b><span>桨频</span></div>
+        <div><b id="lvPow">--</b><span>功率 W</span></div>
+        <div><b id="lvPace">--</b><span>500m 配速</span></div>
+        <div><b id="lvDist">--</b><span>距离 m</span></div>
+        <div><b id="lvRes">--</b><span>机器阻力</span></div>
+        <div><b id="lvHr">--</b><span>心率</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 课程编辑 -->
+  <section id="tab-edit" class="hidden">
+    <div class="card">
+      <div class="row">
+        <select id="edSel" class="grow"></select>
+      </div>
+      <div class="row wrap2" style="margin-top:8px">
+        <button class="btn sm" id="edNew">新建</button>
+        <button class="btn sm" id="edDup">复制</button>
+        <button class="btn sm danger" id="edDel">删除</button>
+        <button class="btn sm ghost" id="edReset">恢复预设课程</button>
+      </div>
+    </div>
+    <div class="card">
+      <label>课程名称</label>
+      <input id="edName" style="width:100%;margin:4px 0 10px">
+      <label>说明</label>
+      <input id="edNote" style="width:100%;margin-top:4px">
+      <div class="muted" id="edTotal" style="margin-top:10px"></div>
+    </div>
+    <div id="edSegs"></div>
+    <button class="btn pri" id="edAdd" style="width:100%">＋ 添加一段</button>
+  </section>
+
+  <!-- 设置 -->
+  <section id="tab-set" class="hidden">
+    <div class="card">
+      <div style="font-weight:600;margin-bottom:6px">阻力测试</div>
+      <div class="muted" style="margin-bottom:10px">第一次用先在这里测：选一个档位发送，看划船机屏幕上的档位是否一致。不一致的话改下面的"档位换算"。</div>
+      <div class="row">
+        <select id="testLv" class="grow"></select>
+        <button class="btn pri" id="btnTest">发送</button>
+      </div>
+      <div class="muted" id="rangeInfo" style="margin-top:8px">阻力范围：未读取</div>
+    </div>
+    <div class="card">
+      <label>档位换算</label>
+      <select id="setScale" style="width:100%;margin:4px 0 10px">
+        <option value="auto">自动（按机器上报的阻力范围换算）</option>
+        <option value="x1">直接发送 1–16</option>
+        <option value="x10">按标准 ×10 发送（10–160）</option>
+      </select>
+      <label>参数格式</label>
+      <select id="setBytes" style="width:100%;margin:4px 0 10px">
+        <option value="auto">自动</option>
+        <option value="u8">1 字节</option>
+        <option value="s16">2 字节</option>
+      </select>
+      <label class="row" style="color:var(--text);font-size:15px;margin-top:4px">
+        <input type="checkbox" id="setSound"> 换段提示音（iPhone 静音键打开时听不到）
+      </label>
+    </div>
+    <div class="card">
+      <div class="row">
+        <div class="grow" style="font-weight:600">蓝牙日志</div>
+        <button class="btn sm ghost" id="logCopy">复制</button>
+        <button class="btn sm ghost" id="logClear">清空</button>
+      </div>
+      <pre class="log" id="log"></pre>
+    </div>
+  </section>
+</div>
+
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const pad = n => String(n).padStart(2, '0');
+const fmt = s => { s = Math.max(0, Math.ceil(s)); return pad(Math.floor(s / 60)) + ':' + pad(s % 60); };
+const hex = b => Array.from(b).map(x => x.toString(16).padStart(2, '0')).join(' ');
+const LS = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+
+/* ---------- 预设课程（16 档刻度） ---------- */
+function seg(n, min, l, s) { return { n, d: Math.round(min * 60), l, s: String(s) }; }
+function presets() {
+  const A = [seg('热身', 5, 4, '20')];
+  for (let i = 0; i < 6; i++) A.push(seg('稳态 ' + (i + 1) + '/6', 3.5, i % 2 ? 7 : 6, '22–24'));
+  A.push(seg('放松', 4, 3, '18'));
+
+  const B = [seg('热身', 6, 4, '20'),
+    seg('爬坡 1', 1, 8, '26–28'), seg('恢复', 1, 5, '20'),
+    seg('爬坡 2', 2, 9, '26–28'), seg('恢复', 1, 5, '20'),
+    seg('顶峰', 3, 10, '26–28'), seg('恢复', 2, 5, '20'),
+    seg('下坡 2', 2, 9, '26–28'), seg('恢复', 1, 5, '20'),
+    seg('下坡 1', 1, 8, '26–28'), seg('恢复', 1, 5, '20'),
+    seg('放松', 5, 3, '18')];
+
+  const C = [seg('热身 1', 3, 4, '20'), seg('热身 2', 3, 5, '22'), seg('热身 3', 2, 6, '24')];
+  for (let i = 1; i <= 4; i++) {
+    C.push(seg('高强度 ' + i + '/4', 4, 9, '28–30'));
+    if (i < 4) C.push(seg('恢复', 3, 4, '20'));
+  }
+  C.push(seg('放松', 5, 3, '18'));
+
+  const D = [seg('热身', 3, 4, '20')];
+  for (let i = 0; i < 6; i++) D.push(seg(i % 2 ? '推进' : '巡航', 1.5, i % 2 ? 6 : 5, '22–24'));
+  D.push(seg('放松', 3, 3, '18'));
+
+  return [
+    { id: 'a', name: 'A 稳态燃脂', note: '能说完整句话的强度，减脂主力，每周 2 次', segs: A },
+    { id: 'b', name: 'B 金字塔间歇', note: '有挑战但不崩，状态中等的日子用', segs: B },
+    { id: 'c', name: 'C 4×4 心肺间歇', note: '专练最大摄氧量；先练两三周 A/B 再上，第一次可以只做 3 组', segs: C },
+    { id: 'd', name: 'D 力量后短有氧', note: '练完哑铃后加练，帮助消耗又不影响恢复', segs: D }
+  ];
+}
+
+let courses = LS.get('row_courses_v1', null) || presets();
+let settings = Object.assign({ scale: 'auto', bytes: 'auto', sound: true, courseId: 'a', offset: 0 }, LS.get('row_settings_v1', {}));
+const saveCourses = () => LS.set('row_courses_v1', courses);
+const saveSettings = () => LS.set('row_settings_v1', settings);
+const courseTotal = c => c.segs.reduce((a, s) => a + s.d, 0);
+function currentCourse() {
+  return courses.find(c => c.id === settings.courseId) || courses[0];
+}
+
+/* ---------- 日志 ---------- */
+const logLines = [];
+function log(t) {
+  const d = new Date();
+  logLines.push(pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()) + '  ' + t);
+  if (logLines.length > 300) logLines.shift();
+  const el = $('#log'); el.textContent = logLines.join('\n'); el.scrollTop = el.scrollHeight;
+}
+
+/* ---------- 蓝牙 FTMS ---------- */
+const UUID = { svc: 0x1826, cp: 0x2AD9, rower: 0x2AD1, range: 0x2AD6 };
+const OPN = { 0x00: '请求控制', 0x01: '重置', 0x04: '设定阻力', 0x07: '开始', 0x08: '停止/暂停' };
+const RES = { 1: '成功', 2: '不支持该指令', 3: '参数无效', 4: '执行失败', 5: '未获得控制权' };
+const ble = { device: null, cp: null, range: null, connected: false, control: false, manualOff: false };
+const live = {};
+let q = Promise.resolve();
+function enqueue(fn) { const p = q.then(fn); q = p.catch(() => {}); return p; }
+
+async function writeCP(bytes, label) {
+  if (!ble.cp) throw new Error('未连接');
+  return enqueue(async () => {
+    const data = new Uint8Array(bytes);
+    log('→ ' + label + ' [' + hex(data) + ']');
+    if (ble.cp.writeValueWithResponse) await ble.cp.writeValueWithResponse(data);
+    else await ble.cp.writeValue(data);
+    await sleep(150);
+  });
+}
+
+function onCP(e) {
+  const v = e.target.value;
+  const b = new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
+  if (b[0] === 0x80) {
+    const op = b[1], res = b[2];
+    log('← ' + (OPN[op] || ('0x' + op.toString(16))) + '：' + (RES[res] || res));
+    if (op === 0x00 && res === 1) ble.control = true;
+    if (res === 5) ble.control = false;
+  } else {
+    log('← [' + hex(b) + ']');
+  }
+}
+
+async function requestControl() {
+  try { await writeCP([0x00], '请求控制'); } catch (e) { log('请求控制失败：' + e.message); }
+}
+
+function levelToRaw(L) {
+  if (settings.scale === 'x1') return L;
+  if (settings.scale === 'x10') return L * 10;
+  const r = ble.range;
+  if (!r || r.max <= 0) return L * 10;
+  if (r.max <= 24) return clamp(L, r.min, r.max);
+  const inc = r.inc > 0 ? r.inc : 1;
+  return clamp(Math.round(L * r.max / 16 / inc) * inc, r.min, r.max);
+}
+function rawToLevel(raw) {
+  const r = ble.range;
+  if (settings.scale === 'x1') return raw;
+  if (settings.scale === 'x10') return Math.round(raw / 10);
+  if (!r || r.max <= 0) return Math.round(raw / 10);
+  if (r.max <= 24) return raw;
+  return Math.round(raw * 16 / r.max);
+}
+
+async function setLevel(level) {
+  level = clamp(Math.round(level), 1, 16);
+  if (!ble.connected || !ble.cp) return;
+  if (!ble.control) await requestControl();
+  const raw = levelToRaw(level);
+  const mode = settings.bytes === 'auto' ? (raw >= 0 && raw <= 255 ? 'u8' : 's16') : settings.bytes;
+  const bytes = mode === 'u8' ? [0x04, raw & 0xff] : [0x04, raw & 0xff, (raw >> 8) & 0xff];
+  try { await writeCP(bytes, '设定阻力 ' + level + ' 档（原始值 ' + raw + '）'); }
+  catch (e) { log('设定阻力失败：' + e.message); }
+}
+
+function parseRower(dv) {
+  try {
+    let o = 0; const f = dv.getUint16(o, true); o += 2;
+    const has = b => (f >> b) & 1;
+    if (!has(0)) { live.spm = dv.getUint8(o) / 2; o += 1; live.strokes = dv.getUint16(o, true); o += 2; }
+    if (has(1)) o += 1;
+    if (has(2)) { live.dist = dv.getUint8(o) | (dv.getUint8(o + 1) << 8) | (dv.getUint8(o + 2) << 16); o += 3; }
+    if (has(3)) { live.pace = dv.getUint16(o, true); o += 2; }
+    if (has(4)) o += 2;
+    if (has(5)) { live.power = dv.getInt16(o, true); o += 2; }
+    if (has(6)) o += 2;
+    if (has(7)) { live.res = dv.getInt16(o, true); o += 2; }
+    if (has(8)) { const k = dv.getUint16(o, true); if (k !== 0xffff) live.kcal = k; o += 5; }
+    if (has(9)) { live.hr = dv.getUint8(o); o += 1; }
+  } catch (e) { /* 分包数据，读到多少算多少 */ }
+  renderLive();
+}
+
+async function gattSetup() {
+  setStatus('连接中…');
+  const server = await ble.device.gatt.connect();
+  const svc = await server.getPrimaryService(UUID.svc);
+  ble.cp = await svc.getCharacteristic(UUID.cp);
+  ble.cp.addEventListener('characteristicvaluechanged', onCP);
+  await ble.cp.startNotifications();
+  try {
+    const r = await svc.getCharacteristic(UUID.rower);
+    r.addEventListener('characteristicvaluechanged', e => parseRower(e.target.value));
+    await r.startNotifications();
+    log('已订阅划船数据');
+  } catch (e) { log('没有划船数据特征：' + e.message); }
+  try {
+    const rg = await svc.getCharacteristic(UUID.range);
+    const v = await rg.readValue();
+    ble.range = { min: v.getInt16(0, true), max: v.getInt16(2, true), inc: v.getUint16(4, true) };
+    log('阻力范围：' + ble.range.min + ' ~ ' + ble.range.max + '，步长 ' + ble.range.inc);
+  } catch (e) { ble.range = null; log('读不到阻力范围，按标准 ×10 处理'); }
+  ble.connected = true; ble.control = false;
+  await requestControl();
+  setStatus();
+}
+
+async function connect(all) {
+  if (!navigator.bluetooth) { alert('当前浏览器不支持网页蓝牙，iPhone 请用 Bluefy 打开本页。'); return; }
+  unlockAudio();
+  try {
+    const opts = all
+      ? { acceptAllDevices: true, optionalServices: [UUID.svc] }
+      : { filters: [{ services: [UUID.svc] }], optionalServices: [UUID.svc] };
+    const dev = await navigator.bluetooth.requestDevice(opts);
+    ble.device = dev; ble.manualOff = false;
+    dev.addEventListener('gattserverdisconnected', onDisconnected);
+    log('选择设备：' + (dev.name || '未命名'));
+    await gattSetup();
+    if (run.active && !run.paused) setLevel(curLevel());
+  } catch (e) {
+    log('连接失败：' + e.message);
+    ble.connected = false; setStatus();
+  }
+}
+
+function disconnect() {
+  ble.manualOff = true;
+  try { if (ble.device && ble.device.gatt.connected) ble.device.gatt.disconnect(); } catch (e) {}
+}
+
+async function onDisconnected() {
+  ble.connected = false; ble.control = false; ble.cp = null;
+  log('蓝牙已断开');
+  setStatus();
+  if (ble.manualOff || !run.active) return;
+  for (let i = 0; i < 3 && !ble.connected; i++) {
+    await sleep(1500);
+    try {
+      log('尝试重连（' + (i + 1) + '/3）');
+      await gattSetup();
+      if (run.active && !run.paused) setLevel(curLevel());
+    } catch (e) { log('重连失败：' + e.message); }
+  }
+  setStatus();
+}
+
+function setStatus(t) {
+  const el = $('#status');
+  if (t) { el.textContent = t; el.className = 'pill'; return; }
+  el.textContent = ble.connected ? '已连接' : '未连接';
+  el.className = 'pill' + (ble.connected ? ' on' : '');
+  $('#btnConnect').classList.toggle('hidden', ble.connected);
+  $('#btnConnectAll').classList.toggle('hidden', ble.connected);
+  $('#btnDisconnect').classList.toggle('hidden', !ble.connected);
+  $('#devInfo').textContent = ble.connected
+    ? '设备：' + (ble.device && ble.device.name || '未命名')
+    : '连接前请先在划船机上划两下把屏幕唤醒，并关掉官方 App。';
+  $('#rangeInfo').textContent = ble.range
+    ? '阻力范围：' + ble.range.min + ' ~ ' + ble.range.max + '（步长 ' + ble.range.inc + '）'
+    : '阻力范围：' + (ble.connected ? '机器未上报' : '未连接');
+}
+
+/* ---------- 声音与常亮 ---------- */
+let actx = null;
+function unlockAudio() {
+  try {
+    if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === 'suspended') actx.resume();
+  } catch (e) {}
+}
+function beep(f, dur) {
+  if (!settings.sound || !actx) return;
+  try {
+    const o = actx.createOscillator(), g = actx.createGain(), t = actx.currentTime;
+    o.type = 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(t); o.stop(t + dur + 0.05);
+  } catch (e) {}
+}
+let wl = null;
+async function wake() { try { if ('wakeLock' in navigator) wl = await navigator.wakeLock.request('screen'); } catch (e) {} }
+function unwake() { try { if (wl) wl.release(); } catch (e) {} wl = null; }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && run.active) wake(); });
+
+/* ---------- 训练引擎 ---------- */
+const run = { active: false, paused: false, idx: 0, acc: 0, t0: 0, course: null, beeped: {}, startAt: 0 };
+const segs = () => (run.course || currentCourse()).segs;
+const segElapsed = () => run.acc + (run.paused ? 0 : (performance.now() - run.t0) / 1000);
+const curLevel = () => clamp(segs()[run.idx].l + settings.offset, 1, 16);
+
+function start() {
+  unlockAudio();
+  const c = currentCourse();
+  if (!c.segs.length) { alert('这个课程还没有内容'); return; }
+  if (!ble.connected && !confirm('还没连接划船机，先只跑计时吗？')) return;
+  run.course = JSON.parse(JSON.stringify(c));
+  Object.assign(run, { active: true, paused: false, idx: 0, acc: 0, t0: performance.now(), beeped: {}, startAt: Date.now() });
+  $('#doneCard').classList.add('hidden'); $('#nowCard').classList.remove('hidden');
+  wake();
+  if (ble.connected) writeCP([0x07], '开始').catch(() => {});
+  enterSeg(true);
+}
+function enterSeg(first) {
+  run.beeped = {};
+  setLevel(curLevel());
+  if (!first) { beep(880, 0.45); flash(); }
+  buildChart(); renderAll();
+}
+function togglePause() {
+  if (!run.active) return start();
+  unlockAudio();
+  if (run.paused) { run.t0 = performance.now(); run.paused = false; wake(); }
+  else { run.acc = segElapsed(); run.paused = true; }
+  renderAll();
+}
+function goNext() {
+  if (!run.active) return;
+  if (run.idx >= segs().length - 1) return finish(true);
+  run.idx++; run.acc = 0; run.t0 = performance.now(); enterSeg();
+}
+function goPrev() {
+  if (!run.active) return;
+  if (segElapsed() < 5 && run.idx > 0) run.idx--;
+  run.acc = 0; run.t0 = performance.now(); enterSeg();
+}
+function finish(completed) {
+  const total = (Date.now() - run.startAt) / 1000;
+  run.active = false; run.paused = false; unwake();
+  if (completed) { beep(660, 0.2); setTimeout(() => beep(880, 0.2), 250); setTimeout(() => beep(1100, 0.4), 500); }
+  $('#nowCard').classList.add('hidden'); $('#doneCard').classList.remove('hidden');
+  $('#doneTime').textContent = fmt(total);
+  const parts = [];
+  if (live.dist) parts.push('距离 ' + live.dist + ' m');
+  if (live.strokes) parts.push(live.strokes + ' 桨');
+  if (live.kcal) parts.push(live.kcal + ' kcal');
+  $('#doneStats').textContent = (completed ? '全部完成，辛苦了 💪 ' : '已提前结束 ') + parts.join(' · ');
+  run.course = null;
+  buildChart(); renderAll();
+}
+function flash() { const el = $('#nowCard'); el.classList.add('flash'); setTimeout(() => el.classList.remove('flash'), 700); }
+
+function tick() {
+  if (!run.active || run.paused) return;
+  let s = segs()[run.idx];
+  let rem = s.d - segElapsed();
+  let guard = 0;
+  while (rem <= 0 && guard++ < 100) {
+    if (run.idx >= segs().length - 1) { finish(true); return; }
+    run.idx++; run.acc = -rem; run.t0 = performance.now();
+    enterSeg();
+    s = segs()[run.idx]; rem = s.d - segElapsed();
+  }
+  const r = Math.ceil(rem);
+  if (r === 10 && s.d > 15 && !run.beeped[10]) { run.beeped[10] = 1; beep(520, 0.15); }
+  if (r >= 1 && r <= 3 && !run.beeped[r]) { run.beeped[r] = 1; beep(660, 0.12); }
+  renderRun();
+}
+setInterval(tick, 200);
+
+/* ---------- 渲染 ---------- */
+function lvColor(l) { return l <= 4 ? 'var(--l1)' : l <= 7 ? 'var(--l2)' : l <= 10 ? 'var(--l3)' : 'var(--l4)'; }
+
+function buildChart() {
+  const ch = $('#chart');
+  ch.querySelectorAll('.bar').forEach(b => b.remove());
+  const list = segs();
+  list.forEach((s, i) => {
+    const d = document.createElement('div');
+    const l = clamp(s.l + settings.offset, 1, 16);
+    d.className = 'bar' + (run.active ? (i === run.idx ? ' cur' : i < run.idx ? ' done' : '') : '');
+    d.style.flex = s.d + ' 1 0';
+    d.style.height = (12 + l / 16 * 88) + '%';
+    d.style.background = lvColor(l);
+    ch.insertBefore(d, $('#playhead'));
+  });
+}
+
+function renderRun() {
+  const list = segs(), total = list.reduce((a, s) => a + s.d, 0);
+  if (!run.active) {
+    $('#playhead').style.left = '0%';
+    $('#elapsedTxt').textContent = '00:00';
+    $('#totalTxt').textContent = fmt(total);
+    $('#segCountTxt').textContent = list.length + ' 段';
+    return;
+  }
+  const s = list[run.idx], el = segElapsed(), rem = s.d - el;
+  const before = list.slice(0, run.idx).reduce((a, x) => a + x.d, 0);
+  const done = before + Math.min(el, s.d);
+  $('#segTimer').textContent = fmt(rem);
+  $('#nowCard').classList.toggle('soon', rem <= 10);
+  $('#playhead').style.left = (done / total * 100).toFixed(2) + '%';
+  $('#elapsedTxt').textContent = fmt(done);
+  $('#totalTxt').textContent = '剩余 ' + fmt(total - done);
+  $('#segCountTxt').textContent = (run.idx + 1) + ' / ' + list.length;
+}
+
+function renderAll() {
+  const c = currentCourse();
+  $('#courseNote').textContent = (c.note ? c.note + ' · ' : '') + '共 ' + fmt(courseTotal(c));
+  $('#courseSel').disabled = run.active;
+  $('#offVal').textContent = (settings.offset > 0 ? '+' : '') + settings.offset;
+  $('#btnMain').textContent = !run.active ? '开始' : run.paused ? '继续' : '暂停';
+  $('#btnMain').className = 'btn ' + (!run.active || run.paused ? 'pri' : 'warnb');
+  $('#btnPrev').disabled = $('#btnNext').disabled = !run.active;
+  $('#btnStop').classList.toggle('hidden', !run.active);
+  const list = segs();
+  if (run.active) {
+    const s = list[run.idx], n = list[run.idx + 1];
+    $('#segName').textContent = s.n + (run.paused ? '（已暂停）' : '');
+    $('#segLevel').textContent = curLevel();
+    $('#segSpm').textContent = s.s || '-';
+    $('#nextInfo').innerHTML = '';
+    const nx = $('#nextInfo');
+    if (n) {
+      nx.append('下一段：');
+      const b = document.createElement('b'); b.textContent = n.n; nx.append(b);
+      nx.append(' · ' + clamp(n.l + settings.offset, 1, 16) + ' 档 · ' + fmt(n.d));
+    } else nx.textContent = '最后一段，坚持住';
+  } else {
+    $('#segName').textContent = '准备开始';
+    $('#segTimer').textContent = list.length ? fmt(list[0].d) : '00:00';
+    $('#segLevel').textContent = list.length ? clamp(list[0].l + settings.offset, 1, 16) : '-';
+    $('#segSpm').textContent = list.length ? list[0].s : '-';
+    $('#nextInfo').textContent = list.length ? '第一段：' + list[0].n : '';
+    $('#nowCard').classList.remove('soon');
+  }
+  renderRun();
+}
+
+function renderLive() {
+  const set = (id, v) => { $(id).textContent = v; };
+  set('#lvSpm', live.spm != null ? Math.round(live.spm) : '--');
+  set('#lvPow', live.power != null ? live.power : '--');
+  set('#lvPace', live.pace ? fmt(live.pace) : '--');
+  set('#lvDist', live.dist != null ? live.dist : '--');
+  set('#lvRes', live.res != null ? rawToLevel(live.res) : '--');
+  set('#lvHr', live.hr ? live.hr : '--');
+}
+
+function fillCourseSelects() {
+  for (const id of ['#courseSel', '#edSel']) {
+    const sel = $(id); sel.innerHTML = '';
+    courses.forEach(c => sel.add(new Option(c.name + '（' + fmt(courseTotal(c)) + '）', c.id)));
+    sel.value = currentCourse().id;
+  }
+}
+
+/* ---------- 课程编辑器 ---------- */
+function renderEditor() {
+  const c = currentCourse();
+  $('#edName').value = c.name; $('#edNote').value = c.note || '';
+  $('#edTotal').textContent = '共 ' + c.segs.length + ' 段，总时长 ' + fmt(courseTotal(c));
+  const box = $('#edSegs'); box.innerHTML = '';
+  c.segs.forEach((s, i) => {
+    const d = document.createElement('div'); d.className = 'seg';
+    d.innerHTML =
+      '<div class="top"><span class="idx"></span><input class="grow" data-k="n"></div>' +
+      '<div class="fields">' +
+      '<div><label>分</label><input type="number" min="0" inputmode="numeric" data-k="m"></div>' +
+      '<div><label>秒</label><input type="number" min="0" max="59" inputmode="numeric" data-k="sec"></div>' +
+      '<div><label>档位</label><select data-k="l"></select></div>' +
+      '<div><label>目标桨频</label><input data-k="s"></div></div>' +
+      '<div class="ops"><button class="btn sm" data-op="up">上移</button><button class="btn sm" data-op="down">下移</button>' +
+      '<button class="btn sm" data-op="copy">复制</button><button class="btn sm danger" data-op="del">删除</button></div>';
+    d.querySelector('.idx').textContent = i + 1;
+    d.querySelector('[data-k=n]').value = s.n;
+    d.querySelector('[data-k=m]').value = Math.floor(s.d / 60);
+    d.querySelector('[data-k=sec]').value = s.d % 60;
+    const ls = d.querySelector('[data-k=l]');
+    for (let l = 1; l <= 16; l++) ls.add(new Option(l, l));
+    ls.value = s.l;
+    d.querySelector('[data-k=s]').value = s.s;
+    d.addEventListener('input', () => {
+      const m = parseInt(d.querySelector('[data-k=m]').value, 10) || 0;
+      const sc = parseInt(d.querySelector('[data-k=sec]').value, 10) || 0;
+      s.n = d.querySelector('[data-k=n]').value || '未命名';
+      s.d = Math.max(5, m * 60 + sc);
+      s.l = parseInt(ls.value, 10);
+      s.s = d.querySelector('[data-k=s]').value;
+      afterEdit(false);
+    });
+    d.querySelectorAll('[data-op]').forEach(b => b.addEventListener('click', () => {
+      const op = b.dataset.op;
+      if (op === 'up' && i > 0) [c.segs[i - 1], c.segs[i]] = [c.segs[i], c.segs[i - 1]];
+      if (op === 'down' && i < c.segs.length - 1) [c.segs[i + 1], c.segs[i]] = [c.segs[i], c.segs[i + 1]];
+      if (op === 'copy') c.segs.splice(i + 1, 0, JSON.parse(JSON.stringify(s)));
+      if (op === 'del') c.segs.splice(i, 1);
+      afterEdit(true);
+    }));
+    box.appendChild(d);
+  });
+}
+function afterEdit(rerender) {
+  saveCourses(); fillCourseSelects();
+  $('#edTotal').textContent = '共 ' + currentCourse().segs.length + ' 段，总时长 ' + fmt(courseTotal(currentCourse()));
+  if (rerender) renderEditor();
+  if (!run.active) { buildChart(); renderAll(); }
+}
+function newId() { return 'c' + Date.now().toString(36); }
+
+/* ---------- 事件绑定 ---------- */
+document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tabs button').forEach(x => x.classList.toggle('act', x === b));
+  ['train', 'edit', 'set'].forEach(t => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+  if (b.dataset.tab === 'edit') renderEditor();
+}));
+$('#btnConnect').onclick = () => connect(false);
+$('#btnConnectAll').onclick = () => connect(true);
+$('#btnDisconnect').onclick = disconnect;
+$('#btnMain').onclick = togglePause;
+$('#btnNext').onclick = goNext;
+$('#btnPrev').onclick = goPrev;
+$('#btnStop').onclick = () => { if (confirm('确定结束这次训练？')) finish(false); };
+$('#offMinus').onclick = () => changeOffset(-1);
+$('#offPlus').onclick = () => changeOffset(1);
+function changeOffset(d) {
+  settings.offset = clamp(settings.offset + d, -8, 8); saveSettings();
+  buildChart(); renderAll();
+  if (run.active) setLevel(curLevel());
+}
+$('#courseSel').onchange = e => { settings.courseId = e.target.value; saveSettings(); $('#doneCard').classList.add('hidden'); $('#nowCard').classList.remove('hidden'); fillCourseSelects(); buildChart(); renderAll(); };
+$('#edSel').onchange = e => { settings.courseId = e.target.value; saveSettings(); fillCourseSelects(); renderEditor(); buildChart(); renderAll(); };
+$('#edName').oninput = e => { currentCourse().name = e.target.value || '未命名课程'; afterEdit(false); };
+$('#edNote').oninput = e => { currentCourse().note = e.target.value; afterEdit(false); };
+$('#edAdd').onclick = () => { currentCourse().segs.push(seg('新段落', 3, 5, '22')); afterEdit(true); };
+$('#edNew').onclick = () => {
+  const c = { id: newId(), name: '我的课程', note: '', segs: [seg('热身', 5, 4, '20'), seg('主体', 10, 6, '22–24'), seg('放松', 3, 3, '18')] };
+  courses.push(c); settings.courseId = c.id; saveSettings(); afterEdit(true);
+};
+$('#edDup').onclick = () => {
+  const c = JSON.parse(JSON.stringify(currentCourse())); c.id = newId(); c.name += '（副本）';
+  courses.push(c); settings.courseId = c.id; saveSettings(); afterEdit(true);
+};
+$('#edDel').onclick = () => {
+  if (courses.length <= 1) { alert('至少保留一个课程'); return; }
+  if (!confirm('删除「' + currentCourse().name + '」？')) return;
+  courses = courses.filter(c => c.id !== settings.courseId);
+  settings.courseId = courses[0].id; saveSettings(); afterEdit(true);
+};
+$('#edReset').onclick = () => {
+  if (!confirm('把 A/B/C/D 四个预设课程恢复成默认内容？你自己新建的课程会保留。')) return;
+  const p = presets();
+  courses = p.concat(courses.filter(c => !['a', 'b', 'c', 'd'].includes(c.id)));
+  settings.courseId = 'a'; saveSettings(); afterEdit(true);
+};
+
+for (let l = 1; l <= 16; l++) $('#testLv').add(new Option(l + ' 档', l));
+$('#testLv').value = 6;
+$('#btnTest').onclick = () => {
+  if (!ble.connected) { alert('请先连接划船机'); return; }
+  setLevel(parseInt($('#testLv').value, 10));
+};
+$('#setScale').value = settings.scale;
+$('#setBytes').value = settings.bytes;
+$('#setSound').checked = settings.sound;
+$('#setScale').onchange = e => { settings.scale = e.target.value; saveSettings(); };
+$('#setBytes').onchange = e => { settings.bytes = e.target.value; saveSettings(); };
+$('#setSound').onchange = e => { settings.sound = e.target.checked; saveSettings(); unlockAudio(); beep(660, 0.12); };
+$('#logClear').onclick = () => { logLines.length = 0; $('#log').textContent = ''; };
+$('#logCopy').onclick = async () => {
+  try { await navigator.clipboard.writeText(logLines.join('\n')); alert('已复制'); }
+  catch (e) { alert('复制失败，可以长按日志手动复制'); }
+};
+
+/* ---------- 初始化 ---------- */
+if (!navigator.bluetooth) $('#noBt').classList.remove('hidden');
+fillCourseSelects(); buildChart(); renderAll(); setStatus();
+log('页面就绪' + (navigator.bluetooth ? '' : '（当前浏览器不支持蓝牙）'));
+</script>
+</body>
+</html>
