@@ -91,6 +91,7 @@ pre.log{background:#0a0e10;border-radius:10px;padding:10px;font-size:12px;max-he
     </div>
   </header>
 
+  <div id="errBox" class="warn hidden" style="color:var(--danger)"></div>
   <div id="noBt" class="warn hidden">当前浏览器不支持网页蓝牙。iPhone 请在 App Store 安装 <b>Bluefy</b> 浏览器后用它打开本页；安卓或电脑请用 Chrome。</div>
 
   <div class="card" id="connectCard">
@@ -235,6 +236,15 @@ pre.log{background:#0a0e10;border-radius:10px;padding:10px;font-size:12px;max-he
 </div>
 
 <script>
+window.addEventListener('error', function (e) {
+  var box = document.getElementById('errBox');
+  if (!box) return;
+  box.classList.remove('hidden');
+  box.textContent = '页面出错了，请截图发给 Claude：' + (e.message || e) + (e.lineno ? '（第 ' + e.lineno + ' 行）' : '');
+});
+</script>
+<script>
+(function () {
 'use strict';
 const $ = s => document.querySelector(s);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -772,7 +782,8 @@ $('#logCopy').onclick = async () => {
 /* ---------- 初始化 ---------- */
 if (!navigator.bluetooth) $('#noBt').classList.remove('hidden');
 fillCourseSelects(); buildChart(); renderAll(); setStatus();
-log('页面就绪' + (navigator.bluetooth ? '' : '（当前浏览器不支持蓝牙）'));
+log('页面就绪 v2' + (navigator.bluetooth ? '' : '（当前浏览器不支持蓝牙）'));
+})();
 </script>
 </body>
 </html>
